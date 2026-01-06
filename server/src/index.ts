@@ -1,12 +1,10 @@
-import express, { Request, Response, NextFunction, Express } from 'express';
+import express, { Express } from 'express';
 import connectDB from './config/db.js';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import cors from 'cors';
-import { aj } from './lib/arcjet.js'
-import { isSpoofedBot } from "@arcjet/inspect";
-import { asyncHandler } from './middlewares/asyncHandler.js';
+import { rateLimiter } from './middlewares/rateLimiter.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
 
 import dotenv from 'dotenv';
@@ -26,6 +24,8 @@ app.use(cors({
 }));
 app.use(express.urlencoded({ extended: true }));
 
+app.use(rateLimiter);
+
 import authRouter from './routes/auth.route.js';
 import userRouter from './routes/user.route.js';
 import courseRouter from './routes/course.route.js';
@@ -33,24 +33,6 @@ import lectureRouter from './routes/lecture.route.js';
 import paymentRouter from './routes/payment.route.js';
 import moduleRouter from './routes/module.route.js';
 import userCourseProgressRouter from './routes/userCourseProgress.route.js';
-
-app.use("/", asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const decision = await aj.protect(req, { requested: 1 });
-
-    if (decision.isDenied()) {
-        if (decision.reason.isRateLimit()) {
-            return res.status(429).json({ error: "Too Many Requests" });
-        } else if (decision.reason.isBot()) {
-            return res.status(403).json({ error: "No bots allowed" });
-        } else {
-            return res.status(403).json({ error: "Forbidden" });
-        }
-    } else if (decision.results.some(isSpoofedBot)) {
-        return res.status(403).json({ error: "Forbidden" });
-    } else {
-        return next();
-    }
-}));
 
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
