@@ -42,11 +42,18 @@ app.use('/api/payments', paymentRouter);
 app.use('/api/modules', moduleRouter);
 app.use('/api/progress', userCourseProgressRouter);
 
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: "Healthy"
+    });
+});
+
 app.use(notFound);
 app.use(errorHandler);
 
 connectDB().then(() => {
-    app.listen(PORT, async () => {
+    app.listen(PORT as number, "0.0.0.0", async () => {
         console.log(`Server is listening on port ${PORT}`);
     })
 }).catch((err) => {
